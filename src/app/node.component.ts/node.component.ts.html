@@ -1,0 +1,79 @@
+<div class="node-container">
+  <div class="node-box">
+    <input
+      [formControl]="node.get('question') | controlAsFormControl"
+      placeholder="Enter question"
+    />
+    <div *ngIf="node.errors?.['missingBand']" class="error-message">
+      ❌ This node must either have a child or a band in both branches.
+    </div>
+
+    <div class="actions">
+      <!-- YES BRANCH -->
+      <div class="branch-option">
+        <button (click)="addChild('yes')" [disabled]="hasConnection('yes')">
+          ➕ Add Yes Node
+        </button>
+        <button
+          (click)="toggleBandDropdown('yes')"
+          [disabled]="hasConnection('yes')"
+        >
+          🎵 Add Band
+        </button>
+
+        <select
+          *ngIf="showYesBandDropdown"
+          [formControl]="getBandControl('yes')"
+          [disabled]="!!getYesChild()"
+        >
+          <option [ngValue]="null">Select Band</option>
+          <option *ngFor="let band of bandlist" [value]="band.id">
+            {{ band.name }}
+          </option>
+        </select>
+      </div>
+
+      <!-- NO BRANCH -->
+      <div class="branch-option">
+        <button (click)="addChild('no')" [disabled]="hasConnection('no')">
+          ➕ Add No Node
+        </button>
+        <button
+          (click)="toggleBandDropdown('no')"
+          [disabled]="hasConnection('no')"
+        >
+          🎵 Add Band
+        </button>
+
+        <select
+          *ngIf="showNoBandDropdown"
+          [formControl]="getBandControl('no')"
+          [disabled]="!!getNoChild()"
+        >
+          <option [ngValue]="null">Select Band</option>
+          <option *ngFor="let band of bandlist" [value]="band.id">
+            {{ band.name }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <button class="delete-btn" (click)="deleteNode()">🗑 Delete Node</button>
+  </div>
+
+  <div class="branches">
+    <ng-container *ngIf="getYesChild() as yesChild">
+      <div class="yes-branch">
+        <div class="arrow right">Yes ➜</div>
+        <app-node [node]="yesChild" [allNodes]="allNodes"></app-node>
+      </div>
+    </ng-container>
+
+    <ng-container *ngIf="getNoChild() as noChild">
+      <div class="no-branch">
+        <div class="arrow left">No ➜</div>
+        <app-node [node]="noChild" [allNodes]="allNodes"></app-node>
+      </div>
+    </ng-container>
+  </div>
+</div>

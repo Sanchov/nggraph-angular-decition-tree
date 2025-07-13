@@ -1,12 +1,51 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { Component, inject, OnInit } from '@angular/core';
+import {
+  AbstractControl,
+  FormArray,
+  FormBuilder,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+} from '@angular/forms';
+import { TreeForm } from './services/tree-form';
+
+import { NgxGraphModule } from '@swimlane/ngx-graph';
+import { NgForOf, NgIf, NgClass } from '@angular/common';
+import { NodeComponent } from './node.component.ts/node.component.ts';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [ReactiveFormsModule, NgxGraphModule, NgForOf, NgIf, NodeComponent],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
-export class App {
-  protected title = 'my-app';
+export class App implements OnInit {
+  fb = inject(FormBuilder);
+  treeService = inject(TreeForm);
+  validationErrors: Record<string, string[]> = {};
+
+  treeForm = this.fb.group({
+    nodes: this.fb.array<FormGroup>([]),
+  });
+
+  get nodeGroups(): FormGroup[] {
+    return this.nodes.controls as FormGroup[];
+  }
+
+  get nodes(): FormArray {
+    return this.treeForm.get('nodes') as FormArray;
+  }
+
+  ngOnInit(): void {
+    this.nodes.push(this.treeService.createNode(true));
+  }
+
+  logTreeStructure() {
+    const treeData = this.nodes.value;
+    console.log('🔍 Full Tree Structure:', JSON.stringify(treeData, null, 2));
+  }
+
+  validateTree() {
+    this.treeService.validateTreeNodes(this.nodes);
+  }
 }
