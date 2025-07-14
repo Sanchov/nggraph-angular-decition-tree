@@ -8,7 +8,7 @@ import {
 import { CommonModule, NgIf, NgForOf } from '@angular/common';
 import { TreeForm } from '../services/tree-form';
 import { ControlAsFormControlPipe } from '../pipes/casting-form-control-pipe';
-import { BANDS_LIST } from '../models/BANDS_LIST';
+import { BANDS_LIST } from '../models/Bands_List';
 
 @Component({
   selector: 'app-node',
@@ -84,6 +84,16 @@ export class NodeComponent {
         (ctrl) => ctrl.get('id')?.value === id
       ) as FormGroup) || null
     );
+  }
+  hoveredBranch: 'yes' | 'no' | null = null;
+
+  // Add these methods if you want hover effects
+  onBranchHover(direction: 'yes' | 'no') {
+    this.hoveredBranch = direction;
+  }
+
+  onBranchLeave() {
+    this.hoveredBranch = null;
   }
 
   addChild(direction: 'yes' | 'no') {

@@ -1,79 +1,108 @@
-<div class="node-container">
-  <div class="node-box">
-    <input
-      [formControl]="node.get('question') | controlAsFormControl"
-      placeholder="Enter question"
-    />
-    <div *ngIf="node.errors?.['missingBand']" class="error-message">
-      ❌ This node must either have a child or a band in both branches.
+<div class="decision-node">
+  <!-- Node Content with horizontal layout -->
+  <div class="node-content horizontal-layout">
+    <!-- Yes Branch Controls -->
+    <div class="branch-side yes-branch">
+      <button
+        (click)="addChild('yes')"
+        [disabled]="hasConnection('yes')"
+        class="branch-button"
+      >
+        ➕
+      </button>
+      <button
+        (click)="toggleBandDropdown('yes')"
+        [disabled]="hasConnection('yes')"
+        class="branch-button"
+      >
+        🎵
+      </button>
+      <select
+        *ngIf="showYesBandDropdown"
+        [formControl]="getBandControl('yes')"
+        [disabled]="!!getYesChild()"
+        class="band-select"
+      >
+        <option [ngValue]="null">Select Band</option>
+        <option *ngFor="let band of bandlist" [value]="band.id">
+          {{ band.name }}
+        </option>
+      </select>
     </div>
 
-    <div class="actions">
-      <!-- YES BRANCH -->
-      <div class="branch-option">
-        <button (click)="addChild('yes')" [disabled]="hasConnection('yes')">
-          ➕ Add Yes Node
-        </button>
-        <button
-          (click)="toggleBandDropdown('yes')"
-          [disabled]="hasConnection('yes')"
-        >
-          🎵 Add Band
-        </button>
-
-        <select
-          *ngIf="showYesBandDropdown"
-          [formControl]="getBandControl('yes')"
-          [disabled]="!!getYesChild()"
-        >
-          <option [ngValue]="null">Select Band</option>
-          <option *ngFor="let band of bandlist" [value]="band.id">
-            {{ band.name }}
-          </option>
-        </select>
+    <!-- Center Question Area -->
+    <div class="question-center">
+      <input
+        [formControl]="node.get('question') | controlAsFormControl"
+        placeholder="Enter question"
+        class="question-input"
+      />
+      <div *ngIf="node.errors?.['missingBand']" class="error-message">
+        ❌ This node must have either a child or a band in both branches
       </div>
-
-      <!-- NO BRANCH -->
-      <div class="branch-option">
-        <button (click)="addChild('no')" [disabled]="hasConnection('no')">
-          ➕ Add No Node
-        </button>
-        <button
-          (click)="toggleBandDropdown('no')"
-          [disabled]="hasConnection('no')"
-        >
-          🎵 Add Band
-        </button>
-
-        <select
-          *ngIf="showNoBandDropdown"
-          [formControl]="getBandControl('no')"
-          [disabled]="!!getNoChild()"
-        >
-          <option [ngValue]="null">Select Band</option>
-          <option *ngFor="let band of bandlist" [value]="band.id">
-            {{ band.name }}
-          </option>
-        </select>
-      </div>
+      <button class="delete-button" (click)="deleteNode()">🗑</button>
     </div>
 
-    <button class="delete-btn" (click)="deleteNode()">🗑 Delete Node</button>
+    <!-- No Branch Controls -->
+    <div class="branch-side no-branch">
+      <button
+        (click)="addChild('no')"
+        [disabled]="hasConnection('no')"
+        class="branch-button"
+      >
+        ➕
+      </button>
+      <button
+        (click)="toggleBandDropdown('no')"
+        [disabled]="hasConnection('no')"
+        class="branch-button"
+      >
+        🎵
+      </button>
+      <select
+        *ngIf="showNoBandDropdown"
+        [formControl]="getBandControl('no')"
+        [disabled]="!!getNoChild()"
+        class="band-select"
+      >
+        <option [ngValue]="null">Select Band</option>
+        <option *ngFor="let band of bandlist" [value]="band.id">
+          {{ band.name }}
+        </option>
+      </select>
+    </div>
   </div>
 
-  <div class="branches">
-    <ng-container *ngIf="getYesChild() as yesChild">
-      <div class="yes-branch">
-        <div class="arrow right">Yes ➜</div>
-        <app-node [node]="yesChild" [allNodes]="allNodes"></app-node>
-      </div>
-    </ng-container>
+  <!-- Connection Lines -->
+  <div class="connection-lines" *ngIf="getYesChild() || getNoChild()">
+    <div class="connector yes-connector" *ngIf="getYesChild()">
+      <div class="vertical-line"></div>
+      <div class="horizontal-line"></div>
+      <div class="branch-label">Yes</div>
+    </div>
+    <div class="connector no-connector" *ngIf="getNoChild()">
+      <div class="vertical-line"></div>
+      <div class="horizontal-line"></div>
+      <div class="branch-label">No</div>
+    </div>
+  </div>
 
-    <ng-container *ngIf="getNoChild() as noChild">
-      <div class="no-branch">
-        <div class="arrow left">No ➜</div>
+  <!-- Child Nodes -->
+  <div class="child-nodes">
+    <!-- Yes Node -->
+    <div class="child-node yes-node">
+      <ng-container *ngIf="getYesChild() as yesChild">
+        <div class="child-connector-line"></div>
+        <app-node [node]="yesChild" [allNodes]="allNodes"></app-node>
+      </ng-container>
+    </div>
+
+    <!-- No Node -->
+    <div class="child-node no-node">
+      <ng-container *ngIf="getNoChild() as noChild">
+        <div class="child-connector-line"></div>
         <app-node [node]="noChild" [allNodes]="allNodes"></app-node>
-      </div>
-    </ng-container>
+      </ng-container>
+    </div>
   </div>
 </div>
