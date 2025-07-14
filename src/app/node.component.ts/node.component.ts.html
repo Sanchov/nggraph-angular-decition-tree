@@ -73,36 +73,45 @@
     </div>
   </div>
 
-  <!-- Connection Lines -->
-  <div class="connection-lines" *ngIf="getYesChild() || getNoChild()">
-    <div class="connector yes-connector" *ngIf="getYesChild()">
-      <div class="vertical-line"></div>
-      <div class="horizontal-line"></div>
-      <div class="branch-label">Yes</div>
+  <!-- Connection Lines (always present, lines conditional) -->
+  <div class="connection-lines">
+    <!-- Yes Connector Area -->
+    <div class="connector yes-connector">
+      <div *ngIf="getYesChild()" class="vertical-line"></div>
+      <div *ngIf="getYesChild()" class="horizontal-line"></div>
+      <div *ngIf="getYesChild()" class="branch-label">Yes</div>
     </div>
-    <div class="connector no-connector" *ngIf="getNoChild()">
-      <div class="vertical-line"></div>
-      <div class="horizontal-line"></div>
-      <div class="branch-label">No</div>
+
+    <!-- No Connector Area -->
+    <div class="connector no-connector">
+      <div *ngIf="getNoChild()" class="vertical-line"></div>
+      <div *ngIf="getNoChild()" class="horizontal-line"></div>
+      <div *ngIf="getNoChild()" class="branch-label">No</div>
     </div>
   </div>
 
-  <!-- Child Nodes -->
+  <!-- Child Nodes: always render both containers -->
   <div class="child-nodes">
     <!-- Yes Node -->
     <div class="child-node yes-node">
-      <ng-container *ngIf="getYesChild() as yesChild">
+      <ng-container *ngIf="getYesChild() as yesChild; else emptyYes">
         <div class="child-connector-line"></div>
         <app-node [node]="yesChild" [allNodes]="allNodes"></app-node>
       </ng-container>
+      <ng-template #emptyYes>
+        <div style="height: 169px"></div>
+      </ng-template>
     </div>
 
     <!-- No Node -->
     <div class="child-node no-node">
-      <ng-container *ngIf="getNoChild() as noChild">
+      <ng-container *ngIf="getNoChild() as noChild; else emptyNo">
         <div class="child-connector-line"></div>
         <app-node [node]="noChild" [allNodes]="allNodes"></app-node>
       </ng-container>
+      <ng-template #emptyNo>
+        <div style="height: 169px"></div>
+      </ng-template>
     </div>
   </div>
 </div>
