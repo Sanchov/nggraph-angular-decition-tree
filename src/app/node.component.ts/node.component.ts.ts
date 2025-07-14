@@ -85,16 +85,6 @@ export class NodeComponent {
       ) as FormGroup) || null
     );
   }
-  hoveredBranch: 'yes' | 'no' | null = null;
-
-  // Add these methods if you want hover effects
-  onBranchHover(direction: 'yes' | 'no') {
-    this.hoveredBranch = direction;
-  }
-
-  onBranchLeave() {
-    this.hoveredBranch = null;
-  }
 
   addChild(direction: 'yes' | 'no') {
     const index = this.allNodes.controls.indexOf(this.node);

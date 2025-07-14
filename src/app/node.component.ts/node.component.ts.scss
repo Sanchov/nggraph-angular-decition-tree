@@ -19,8 +19,6 @@ $radius-lg: 8px;
 
 $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-// === COMPONENT STYLES ===
-
 .decision-node {
   position: relative;
   display: flex;
@@ -29,7 +27,6 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   margin-top: 50px;
 }
 
-// Horizontal layout for the node
 .node-content.horizontal-layout {
   display: flex;
   flex-direction: row;
@@ -43,7 +40,6 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   box-shadow: $shadow;
 }
 
-// Left and right controls
 .branch-side {
   display: flex;
   flex-direction: column;
@@ -77,7 +73,6 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 }
 
-// Question area in the middle
 .question-center {
   display: flex;
   flex-direction: column;
@@ -189,19 +184,23 @@ $shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
 .child-nodes {
   display: flex;
-  width: 100%;
   justify-content: space-between;
   align-items: flex-start;
+  width: 100%;
+  gap: 60px;
   margin-top: 60px;
   position: relative;
+  flex-wrap: nowrap;
+  min-height: 300px;
 }
 
 .child-node {
-  width: 48%;
+  flex: 1 1 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   position: relative;
+  min-width: 300px;
 }
 
 .child-connector-line {

@@ -1,10 +1,23 @@
-<ng-container *ngFor="let node of nodeGroups">
-  <app-node
-    *ngIf="node.get('isRoot')?.value"
-    [node]="node"
-    [allNodes]="nodes"
-    [validationErrors]="validationErrors"
-  ></app-node>
-</ng-container>
-<button (click)="logTreeStructure()">📦 Log Tree</button>
-<button (click)="validateTree()">✅ Validate Tree</button>
+<div class="zoom-controls">
+  <button (click)="zoomOut()">➖</button>
+  <button (click)="resetZoom()">🔁</button>
+  <button (click)="zoomIn()">➕</button>
+</div>
+
+<div class="tree-zoom-wrapper" [style.transform]="'scale(' + zoom + ')'">
+  <div class="tree">
+    <ng-container *ngFor="let node of nodeGroups">
+      <app-node
+        *ngIf="node.get('isRoot')?.value"
+        [node]="node"
+        [allNodes]="nodes"
+        [validationErrors]="validationErrors"
+      ></app-node>
+    </ng-container>
+  </div>
+</div>
+
+<div class="action-buttons">
+  <button (click)="logTreeStructure()">📦 Log Tree</button>
+  <button (click)="validateTree()">✅ Validate Tree</button>
+</div>
