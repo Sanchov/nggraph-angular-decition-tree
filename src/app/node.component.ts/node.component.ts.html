@@ -1,5 +1,4 @@
 <div class="decision-node">
-  <!-- Node Content with horizontal layout -->
   <div class="node-content horizontal-layout">
     <!-- Yes Branch Controls -->
     <div class="branch-side yes-branch">
@@ -73,7 +72,6 @@
     </div>
   </div>
 
-  <!-- Connection Lines (always present, lines conditional) -->
   <div class="connection-lines">
     <!-- Yes Connector Area -->
     <div class="connector yes-connector">
@@ -90,13 +88,19 @@
     </div>
   </div>
 
-  <!-- Child Nodes: always render both containers -->
   <div class="child-nodes">
     <!-- Yes Node -->
-    <div class="child-node yes-node">
+    <div
+      class="child-node yes-node"
+      [ngStyle]="{ marginLeft: getDynamicGap(), marginRight: getDynamicGap() }"
+    >
       <ng-container *ngIf="getYesChild() as yesChild; else emptyYes">
         <div class="child-connector-line"></div>
-        <app-node [node]="yesChild" [allNodes]="allNodes"></app-node>
+        <app-node
+          [node]="yesChild"
+          [allNodes]="allNodes"
+          [level]="level + 1"
+        ></app-node>
       </ng-container>
       <ng-template #emptyYes>
         <div style="height: 169px"></div>
@@ -104,10 +108,17 @@
     </div>
 
     <!-- No Node -->
-    <div class="child-node no-node">
+    <div
+      class="child-node no-node"
+      [ngStyle]="{ marginLeft: getDynamicGap(), marginRight: getDynamicGap() }"
+    >
       <ng-container *ngIf="getNoChild() as noChild; else emptyNo">
         <div class="child-connector-line"></div>
-        <app-node [node]="noChild" [allNodes]="allNodes"></app-node>
+        <app-node
+          [node]="noChild"
+          [allNodes]="allNodes"
+          [level]="level + 1"
+        ></app-node>
       </ng-container>
       <ng-template #emptyNo>
         <div style="height: 169px"></div>

@@ -5,7 +5,7 @@ import {
   FormControl,
   ReactiveFormsModule,
 } from '@angular/forms';
-import { CommonModule, NgIf, NgForOf } from '@angular/common';
+import { CommonModule, NgIf, NgForOf, NgStyle } from '@angular/common';
 import { TreeForm } from '../services/tree-form';
 import { ControlAsFormControlPipe } from '../pipes/casting-form-control-pipe';
 import { BANDS_LIST } from '../models/Bands_List';
@@ -19,6 +19,7 @@ import { BANDS_LIST } from '../models/Bands_List';
     NgIf,
     ControlAsFormControlPipe,
     NgForOf,
+    NgStyle,
   ],
   templateUrl: './node.component.ts.html',
   styleUrl: './node.component.ts.scss',
@@ -30,12 +31,18 @@ export class NodeComponent {
   treeForm = inject(TreeForm);
   showYesBandDropdown = false;
   showNoBandDropdown = false;
+  @Input() level: number = 0;
 
   @Input() validationErrors: Record<string, string[]> = {};
 
   get nodeErrors(): string[] {
     const nodeId = this.node.get('id')?.value;
     return this.validationErrors[nodeId] || [];
+  }
+
+  baseGap = 30;
+  getDynamicGap(): string {
+    return `${this.baseGap * Math.pow(2, this.level)}px`;
   }
 
   toggleBandDropdown(direction: 'yes' | 'no') {
