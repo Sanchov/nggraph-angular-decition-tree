@@ -27,7 +27,13 @@
       >
         <body
           xmlns="http://www.w3.org/1999/xhtml"
-          style="margin: 0; padding: 0"
+          style="
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          "
         >
           <div
             style="
@@ -44,7 +50,7 @@
               type="text"
               [ngModel]="node.label"
               (ngModelChange)="onLabelChange($event, node)"
-              style="width: 100%; margin-bottom: 4px"
+              style="width: 100%; box-sizing: border-box; margin-bottom: 4px"
             />
             <div style="display: flex; justify-content: space-between">
               <button (click)="createYesNode(node)" style="font-size: 12px">
