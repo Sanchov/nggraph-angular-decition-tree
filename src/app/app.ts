@@ -12,10 +12,12 @@ import { TreeForm } from './services/tree-form';
 import { NgxGraphModule } from '@swimlane/ngx-graph';
 import { NgForOf, NgIf, NgClass } from '@angular/common';
 import { NodeComponent } from './node.component.ts/node.component.ts';
+import { DecisionTreeGraphComponent } from "./component/graph.component/graph.component";
 
 @Component({
   selector: 'app-root',
-  imports: [ReactiveFormsModule, NgxGraphModule, NgForOf, NgIf, NodeComponent],
+  imports: [ReactiveFormsModule, NgxGraphModule, DecisionTreeGraphComponent],
+  // imports: [ReactiveFormsModule, NgxGraphModule, NgForOf, NgIf, NodeComponent, DecisionTreeGraphComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
