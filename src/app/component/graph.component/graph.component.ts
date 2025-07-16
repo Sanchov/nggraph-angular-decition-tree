@@ -16,7 +16,7 @@ import { CommonModule, NgIf } from '@angular/common';
   styleUrl: './graph.component.scss',
 })
 export class DecisionTreeGraphComponent {
-  view: [number, number] = [800, 550];
+  view: [number, number] = [1200, 1200];
 
   nodes: Node[] = [
     {
