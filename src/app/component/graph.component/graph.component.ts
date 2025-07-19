@@ -1,39 +1,51 @@
-import { Component, inject, OnInit } from '@angular/core';
-import { FormArray, FormGroup, FormBuilder, FormsModule } from '@angular/forms';
-import { Node, Edge, GraphModule } from '@swimlane/ngx-graph';
+import {
+  ChangeDetectorRef,
+  Component,
+  OnInit,
+  ViewChild,
+  inject,
+} from '@angular/core';
+import { FormArray, FormBuilder, FormGroup, FormsModule } from '@angular/forms';
+import { Node, Edge, GraphModule, GraphComponent } from '@swimlane/ngx-graph';
 import { TreeForm } from '../../services/tree-form';
-import { NgForOf, NgIf } from '@angular/common';
+import { NgForOf, NgIf, TitleCasePipe } from '@angular/common';
 import { curveLinear } from 'd3-shape';
+import { debounceTime, fromEvent } from 'rxjs';
+
 interface BandSelection {
   nodeId: string;
   direction: 'yes' | 'no';
   bandId: string | null;
 }
+
 @Component({
   selector: 'decision-tree-graph',
   standalone: true,
-  imports: [GraphModule, FormsModule, NgForOf, NgIf],
+  imports: [GraphModule, FormsModule, NgForOf, NgIf, TitleCasePipe],
   templateUrl: './graph.component.html',
   styleUrl: './graph.component.scss',
 })
 export class DecisionTreeGraphComponent implements OnInit {
   treeForm = inject(TreeForm);
   fb = inject(FormBuilder);
-  bandSelections: BandSelection[] = [];
+  private cdRef = inject(ChangeDetectorRef);
 
-  view: [number, number] = [1000, 2000];
+  @ViewChild(GraphComponent) graphComponent!: GraphComponent;
+
+  isGraphReady = false;
+  view: [number, number] = [2200, 800];
   nodes: Node[] = [];
   links: Edge[] = [];
   formArray: FormArray = this.fb.array([]);
   curve = curveLinear;
+
+  private savedTransform: any = null;
 
   layoutSettings = {
     orientation: 'TB',
     nodePadding: 50,
     edgePadding: 100,
     rankPadding: 100,
-    edgeLabelPosition: 'c',
-    ranker: 'tight-tree',
   };
 
   bands = [
@@ -42,13 +54,37 @@ export class DecisionTreeGraphComponent implements OnInit {
     { id: 'band-3', name: 'Band C' },
   ];
 
+  bandSelections: BandSelection[] = [];
+  draftLabels: Record<string, string> = {};
+  labelUpdateTimers: Record<string, any> = {};
+
   ngOnInit() {
     const rootNode = this.treeForm.createNode(true, null, []);
+    rootNode.get('question')?.setValue('Untitled');
     this.formArray.push(rootNode);
-    this.updateGraphFromForm();
+    this.updateViewDimensions();
+
+    fromEvent(window, 'resize')
+      .pipe(debounceTime(200))
+      .subscribe(() => {
+        this.updateViewDimensions();
+        this.cdRef.detectChanges();
+      });
+
+    setTimeout(() => this.updateGraphFromForm(), 0);
+  }
+
+  private updateViewDimensions() {
+    const width = Math.min(window.innerWidth * 0.9, 2000);
+    const height = Math.min(window.innerHeight * 0.8, 1500);
+    this.view = [width, height];
   }
 
   updateGraphFromForm() {
+    if (this.graphComponent?.transform) {
+      this.savedTransform = Object.assign({}, this.graphComponent.transform);
+    }
+
     const visited = new Set<string>();
     const graphNodes: Node[] = [];
     const graphEdges: Edge[] = [];
@@ -61,7 +97,7 @@ export class DecisionTreeGraphComponent implements OnInit {
     if (!root) return;
 
     const queue: { id: string; level: number }[] = [
-      { id: root.get('id')?.value, level: 0 },
+      { id: root.get('id')?.value || '', level: 0 },
     ];
 
     while (queue.length > 0) {
@@ -72,15 +108,17 @@ export class DecisionTreeGraphComponent implements OnInit {
       const formNode = getNodeById(id);
       if (!formNode) continue;
 
-      const label = formNode.get('question')?.value || 'Untitled';
+      const rawLabel = (formNode.get('question')?.value || '').toString();
+      const label = rawLabel.trim() === '' ? ' ' : rawLabel;
+
       const yesId = formNode.get('yes.nodeId')?.value;
       const noId = formNode.get('no.nodeId')?.value;
 
       graphNodes.push({
         id,
         label,
-        dimension: { width: 200, height: 110 },
-        data: { level },
+        dimension: { width: 200, height: 199 },
+        data: { level, isInvalid: rawLabel.trim() === '' },
       });
 
       if (yesId) {
@@ -90,10 +128,6 @@ export class DecisionTreeGraphComponent implements OnInit {
           target: yesId,
           label: 'Yes',
           data: { type: 'yes' },
-          points: [
-            { x: 0, y: 0 },
-            { x: 0, y: 50 },
-          ], // Default points
         });
         if (!visited.has(yesId)) queue.push({ id: yesId, level: level + 1 });
       }
@@ -105,31 +139,30 @@ export class DecisionTreeGraphComponent implements OnInit {
           target: noId,
           label: 'No',
           data: { type: 'no' },
-          points: [
-            { x: 0, y: 0 },
-            { x: 0, y: 50 },
-          ], // Default points
         });
         if (!visited.has(noId)) queue.push({ id: noId, level: level + 1 });
       }
     }
 
-    this.nodes = graphNodes;
-    this.links = graphEdges;
+    this.nodes = [...graphNodes];
+    this.links = [...graphEdges];
+    this.isGraphReady = true;
+    this.cdRef.detectChanges();
+
+    setTimeout(() => {
+      this.cdRef.detectChanges();
+      if (this.graphComponent && this.savedTransform) {
+        this.graphComponent.zoomTo(this.savedTransform);
+      }
+    }, 50);
   }
 
-  getVerticalPath(link: Edge): string {
-    if (!link.points || link.points.length < 2) {
-      // Fallback to simple vertical line
-      return `M0,0 L0,50`;
-    }
-
-    const sourceX = link.points[0].x;
-    const sourceY = link.points[0].y;
-    const targetY = link.points[link.points.length - 1].y;
-
-    return `M${sourceX},${sourceY} L${sourceX},${targetY}`;
+  getFormNodeById(id: string): FormGroup {
+    return this.formArray.controls.find(
+      (ctrl) => ctrl.get('id')?.value === id
+    ) as FormGroup;
   }
+
   createYesNode(node: Node) {
     this.addChildFromGraphNode(node.id, 'yes');
   }
@@ -148,14 +181,14 @@ export class DecisionTreeGraphComponent implements OnInit {
     this.updateGraphFromForm();
   }
 
-  onLabelChange(newLabel: string, node: Node) {
-    const formNode = this.formArray.controls.find(
-      (ctrl) => ctrl.get('id')?.value === node.id
-    );
-    if (formNode) {
-      formNode.get('question')?.setValue(newLabel);
-      this.updateGraphFromForm();
-    }
+  getVerticalPath(link: Edge): string {
+    if (!link.points || link.points.length < 2) return `M0,0 L0,50`;
+
+    const sourceX = link.points[0].x;
+    const sourceY = link.points[0].y;
+    const targetY = link.points[link.points.length - 1].y;
+
+    return `M${sourceX},${sourceY} L${sourceX},${targetY}`;
   }
 
   onBandChange(
@@ -164,29 +197,27 @@ export class DecisionTreeGraphComponent implements OnInit {
     newBandId: string | null
   ) {
     const node = this.getFormNodeById(nodeId);
-    if (node) {
-      const dirGroup = node.get(direction) as FormGroup;
-      dirGroup.get('bandId')?.setValue(newBandId);
+    if (!node) return;
 
-      // Update our band selections tracking
-      const existingIndex = this.bandSelections.findIndex(
-        (sel) => sel.nodeId === nodeId && sel.direction === direction
-      );
+    const dirGroup = node.get(direction) as FormGroup;
+    dirGroup.get('bandId')?.setValue(newBandId);
 
-      if (existingIndex >= 0) {
-        this.bandSelections[existingIndex].bandId = newBandId;
-      } else {
-        this.bandSelections.push({ nodeId, direction, bandId: newBandId });
-      }
+    const existingIndex = this.bandSelections.findIndex(
+      (sel) => sel.nodeId === nodeId && sel.direction === direction
+    );
 
-      this.updateGraphFromForm();
+    if (existingIndex >= 0) {
+      this.bandSelections[existingIndex].bandId = newBandId;
+    } else {
+      this.bandSelections.push({ nodeId, direction, bandId: newBandId });
     }
+
+    this.updateGraphFromForm();
   }
 
-  getFormNodeById(id: string): FormGroup {
-    return this.formArray.controls.find(
-      (ctrl) => (ctrl as FormGroup).get('id')?.value === id
-    ) as FormGroup;
+  getBandId(id: string, dir: 'yes' | 'no'): string | null {
+    const node = this.getFormNodeById(id);
+    return node?.get(dir)?.get('bandId')?.value || null;
   }
 
   hasChild(id: string, dir: 'yes' | 'no'): boolean {
@@ -194,12 +225,6 @@ export class DecisionTreeGraphComponent implements OnInit {
     return !!node?.get(dir)?.get('nodeId')?.value;
   }
 
-  getBandId(id: string, dir: 'yes' | 'no'): string | null {
-    const node = this.getFormNodeById(id);
-    return node?.get(dir)?.get('bandId')?.value ?? null;
-  }
-
-  // Add this new method to check if band is selected
   hasBandSelected(nodeId: string, direction: 'yes' | 'no'): boolean {
     return !!this.bandSelections.find(
       (sel) =>
@@ -209,38 +234,63 @@ export class DecisionTreeGraphComponent implements OnInit {
     );
   }
 
+  onQuestionDraftChange(newLabel: string, node: Node) {
+    this.draftLabels[node.id] = newLabel;
+
+    if (this.labelUpdateTimers[node.id]) {
+      clearTimeout(this.labelUpdateTimers[node.id]);
+    }
+
+    this.labelUpdateTimers[node.id] = setTimeout(() => {
+      this.commitLabelChange(node);
+    }, 400);
+  }
+
+  deleteNode(node: Node) {
+    if (node.data?.level === 0) {
+      return;
+    }
+
+    if (
+      confirm('Are you sure you want to delete this node and all its children?')
+    ) {
+      this.formArray = this.treeForm.terminator(this.formArray, node.id);
+      this.updateGraphFromForm();
+    }
+  }
+
+  commitLabelChange(node: Node) {
+    const formNode = this.getFormNodeById(node.id);
+    if (!formNode) return;
+
+    const newLabel = this.draftLabels[node.id] || '';
+    formNode.get('question')?.setValue(newLabel);
+
+    const existing = this.nodes.find((n) => n.id === node.id);
+    if (existing) existing.label = newLabel.trim() === '' ? ' ' : newLabel;
+
+    this.cdRef.detectChanges();
+  }
+
   markInvalidNodes() {
     this.nodes = this.nodes.map((node) => {
       const formNode = this.getFormNodeById(node.id);
       const isValid = formNode?.get('question')?.value?.trim() !== '';
-      return {
-        ...node,
-        data: {
-          ...node.data,
-          isInvalid: !isValid,
-        },
-      };
+      return { ...node, data: { ...node.data, isInvalid: !isValid } };
     });
   }
 
-  // Add this validation method
   validateTree(): boolean {
-    // Check all nodes have a question
-    const hasEmptyQuestions = this.formArray.controls.some((ctrl) => {
-      const question = ctrl.get('question')?.value;
-      return !question || question.trim() === '';
-    });
-
+    const hasEmptyQuestions = this.formArray.controls.some(
+      (ctrl) => !(ctrl.get('question')?.value || '').trim()
+    );
     if (hasEmptyQuestions) {
       alert('All nodes must have a question!');
       return false;
     }
 
-    // Check all leaf nodes have bands selected
     const leafNodes = this.formArray.controls.filter((ctrl) => {
-      const yesNode = ctrl.get('yes.nodeId')?.value;
-      const noNode = ctrl.get('no.nodeId')?.value;
-      return !yesNode && !noNode;
+      return !ctrl.get('yes.nodeId')?.value && !ctrl.get('no.nodeId')?.value;
     });
 
     const hasUnbandedLeaves = leafNodes.some((ctrl) => {
@@ -256,8 +306,9 @@ export class DecisionTreeGraphComponent implements OnInit {
 
     return true;
   }
-
-  // Update your logTreeStructure to include validation
+  asDir(dir: string): 'yes' | 'no' {
+    return dir === 'yes' ? 'yes' : 'no';
+  }
   logTreeStructure() {
     if (this.validateTree()) {
       console.log(
