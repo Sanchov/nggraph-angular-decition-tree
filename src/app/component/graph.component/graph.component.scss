@@ -1,0 +1,11 @@
+.custom-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+::ng-deep .band-selected .mat-form-field-outline {
+  border-color: #81c784 !important;
+}
+
+::ng-deep .band-selected .mat-form-field-flex {
+  background-color: #f1f8e9 !important;
+}

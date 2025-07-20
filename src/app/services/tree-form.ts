@@ -14,7 +14,6 @@ export class TreeForm {
     existingIds: string[] = []
   ): FormGroup {
     let newId = uuid();
-
     while (existingIds.includes(newId)) {
       newId = uuid();
     }
@@ -34,6 +33,48 @@ export class TreeForm {
     });
   }
 
+  getFormNodeById(nodes: FormArray, id: string): FormGroup | null {
+    return (nodes.controls.find((ctrl) => ctrl.get('id')?.value === id) ||
+      null) as FormGroup | null;
+  }
+
+  hasChild(nodes: FormArray, id: string, dir: 'yes' | 'no'): boolean {
+    const node = this.getFormNodeById(nodes, id);
+    return !!node?.get(dir)?.get('nodeId')?.value;
+  }
+
+  getBandId(nodes: FormArray, id: string, dir: 'yes' | 'no'): string | null {
+    const node = this.getFormNodeById(nodes, id);
+    return node?.get(dir)?.get('bandId')?.value || null;
+  }
+
+  hasBandSelected(
+    nodes: FormArray,
+    bandSelections: {
+      nodeId: string;
+      direction: 'yes' | 'no';
+      bandId: string | null;
+    }[],
+    nodeId: string,
+    direction: 'yes' | 'no'
+  ): boolean {
+    const node = this.getFormNodeById(nodes, nodeId);
+    if (!node) return false;
+
+    const formValue = node.get(direction)?.get('bandId')?.value;
+    const selectionValue = bandSelections.find(
+      (sel) => sel.nodeId === nodeId && sel.direction === direction
+    )?.bandId;
+
+    return !!formValue || !!selectionValue;
+  }
+
+  getLeafNodes(nodes: FormArray): FormGroup[] {
+    return nodes.controls.filter((ctrl) => {
+      return !ctrl.get('yes.nodeId')?.value && !ctrl.get('no.nodeId')?.value;
+    }) as FormGroup[];
+  }
+
   validateTreeNodes(nodes: FormArray) {
     for (const node of nodes.controls as FormGroup[]) {
       const yesChildId = node.get('yes')?.get('nodeId')?.value;
@@ -42,14 +83,8 @@ export class TreeForm {
       const noBand = node.get('no')?.get('bandId')?.value;
 
       let hasError = false;
-
-      if (!yesChildId && !yesBand) {
-        hasError = true;
-      }
-
-      if (!noChildId && !noBand) {
-        hasError = true;
-      }
+      if (!yesChildId && !yesBand) hasError = true;
+      if (!noChildId && !noBand) hasError = true;
 
       if (hasError) {
         node.setErrors({ missingBand: true });
@@ -66,7 +101,6 @@ export class TreeForm {
 
   addChildNode(nodes: FormArray, parentIndex: number, direction: 'yes' | 'no') {
     const parent = nodes.at(parentIndex);
-
     const existingIds = nodes.controls.map((ctrl) => ctrl.get('id')?.value);
     const newChild = this.createNode(false, null, existingIds);
 

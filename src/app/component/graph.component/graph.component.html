@@ -8,7 +8,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #f5f5f5;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
     overflow: auto;
     padding: 20px;
     box-sizing: border-box;
@@ -19,11 +19,13 @@
     style="
       display: block;
       margin: auto;
-      background-color: white;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
       min-width: 800px;
       min-height: 600px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      backdrop-filter: blur(10px);
     "
     [view]="view"
     [nodes]="nodes"
@@ -33,15 +35,11 @@
     layout="dagre"
     orientation="TB"
   >
-    <!-- ... (keep existing defsTemplate and other templates) ... -->
-
     <ng-template #nodeTemplate let-node>
       <svg:g
-        style="cursor: pointer; transition: filter 0.2s"
+        style="cursor: pointer; transition: all 0.3s ease"
         [style.filter]="
-          'drop-shadow(0 0 ' +
-          (node.hover ? '8px rgba(0, 0, 0, 0.2)' : '0px rgba(0,0,0,0)') +
-          ')'
+          node.hover ? 'drop-shadow(0 0 12px rgba(0, 0, 0, 0.15))' : 'none'
         "
       >
         <svg:foreignObject
@@ -50,241 +48,239 @@
         >
           <div
             xmlns="http://www.w3.org/1999/xhtml"
-            style="
-              width: 100%;
-              height: 100%;
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            "
+            style="width: 100%; height: 100%; box-sizing: border-box"
           >
-            <div
-              style="
-                width: 100%;
-                height: 100%;
-                background: #fff;
-                border: 2px solid;
-                border-color: red;
-                border-radius: 8px;
-                padding: 8px;
-                box-sizing: border-box;
-                font-size: 12px;
-                display: flex;
-                flex-direction: column;
-                gap: 8px;
-              "
-              [style.border-color]="node.data?.isInvalid ? 'red' : '#1976d2'"
+            <mat-card
+              [ngStyle]="{
+                width: '100%',
+                height: '100%',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                border:
+                  '2px solid ' +
+                  (node.data?.isInvalid
+                    ? '#f44336'
+                    : node.data?.level === 0
+                    ? '#673ab7'
+                    : node.data?.level % 2 === 1
+                    ? '#2196f3'
+                    : '#4caf50'),
+                borderRadius: '8px'
+              }"
+              [class.mat-elevation-z4]="!node.hover"
+              [class.mat-elevation-z8]="node.hover"
             >
-              <input
-                type="text"
-                [ngModel]="
-                  draftLabels[node.id] !== undefined
-                    ? draftLabels[node.id]
-                    : node.label
-                "
-                (ngModelChange)="onQuestionDraftChange($event, node)"
-                (blur)="commitLabelChange(node)"
-                style="
-                  width: 100%;
-                  box-sizing: border-box;
-                  padding: 6px 8px;
-                  font-weight: bold;
-                  border: 1px solid #ddd;
-                  border-radius: 4px;
-                  background: #f9f9f9;
-                  transition: border-color 0.2s;
-                "
-                [style.border-color]="node.data?.isInvalid ? 'red' : '#ddd'"
-              />
+              <!-- Question Field -->
+              <mat-form-field appearance="outline" style="width: 100%">
+                <mat-label>Decision Question</mat-label>
+                <input
+                  matInput
+                  [ngModel]="draftLabels[node.id] || node.label"
+                  (ngModelChange)="onQuestionDraftChange($event, node)"
+                  (blur)="commitLabelChange(node)"
+                  placeholder="Enter your question here"
+                  style="font-size: 14px; font-weight: 500"
+                />
+                <mat-error *ngIf="node.data?.isInvalid">
+                  Question is required
+                </mat-error>
+              </mat-form-field>
 
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  gap: 6px;
-                "
-              >
-                <button
-                  (click)="createYesNode(node)"
-                  [disabled]="
-                    hasChild(node.id, 'yes') || hasBandSelected(node.id, 'yes')
-                  "
-                  style="
-                    font-size: 11px;
-                    padding: 4px 8px;
-                    background: linear-gradient(to bottom, #4caf50, #388e3c);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    transition: all 0.2s;
-                    flex: 1;
-                    text-align: center;
-                  "
-                  [style.opacity]="
-                    hasChild(node.id, 'yes') || hasBandSelected(node.id, 'yes')
-                      ? '0.6'
-                      : '1'
-                  "
-                >
-                  Add Yes
-                </button>
-                <select
-                  [ngModel]="getBandId(node.id, 'yes')"
-                  (ngModelChange)="onBandChange(node.id, 'yes', $event)"
-                  style="
-                    font-size: 11px;
-                    padding: 4px 6px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    background: white;
-                    cursor: pointer;
-                    flex: 1;
-                    min-width: 0;
-                    transition: all 0.2s;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-                  "
-                  [disabled]="
-                    hasChild(node.id, 'yes') || hasBandSelected(node.id, 'yes')
-                  "
-                  [style.opacity]="
-                    hasChild(node.id, 'yes') || hasBandSelected(node.id, 'yes')
-                      ? '0.6'
-                      : '1'
-                  "
-                  [style.background]="
-                    hasChild(node.id, 'yes') || hasBandSelected(node.id, 'yes')
-                      ? '#f5f5f5'
-                      : 'white'
-                  "
-                >
-                  <option [ngValue]="null">Select Band</option>
-                  <option *ngFor="let band of bands" [ngValue]="band.id">
-                    {{ band.name }}
-                  </option>
-                </select>
-              </div>
+              <!-- Button and Selects -->
+              <div style="display: flex; gap: 12px">
+                <!-- YES -->
+                <div style="flex: 1">
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    (click)="createYesNode(node)"
+                    [disabled]="
+                      hasChild(node.id, 'yes') ||
+                      hasBandSelected(node.id, 'yes')
+                    "
+                    [style.opacity]="
+                      hasChild(node.id, 'yes') ||
+                      hasBandSelected(node.id, 'yes')
+                        ? 0.6
+                        : 1
+                    "
+                    style="
+                      width: 100%;
+                      height: 40px;
+                      font-weight: 500;
+                      border: 2px solid #2196f3;
+                      border-radius: 6px;
+                      background-color: #e3f2fd;
+                    "
+                  >
+                    Yes Path
+                  </button>
 
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  align-items: center;
-                  gap: 6px;
-                "
-              >
-                <button
-                  (click)="createNoNode(node)"
-                  [disabled]="
-                    hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
-                  "
-                  style="
-                    font-size: 11px;
-                    padding: 4px 8px;
-                    background: linear-gradient(to bottom, #f44336, #d32f2f);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    transition: all 0.2s;
-                    flex: 1;
-                    text-align: center;
-                  "
-                  [style.opacity]="
-                    hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
-                      ? '0.6'
-                      : '1'
-                  "
-                >
-                  Add No
-                </button>
-                <select
-                  [ngModel]="getBandId(node.id, 'no')"
-                  (ngModelChange)="onBandChange(node.id, 'no', $event)"
-                  style="
-                    font-size: 11px;
-                    padding: 4px 6px;
-                    border: 1px solid #ccc;
-                    border-radius: 4px;
-                    background: white;
-                    cursor: pointer;
-                    flex: 1;
-                    min-width: 0;
-                    transition: all 0.2s;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-                  "
-                  [disabled]="
-                    hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
-                  "
-                  [style.opacity]="
-                    hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
-                      ? '0.6'
-                      : '1'
-                  "
-                  [style.background]="
-                    hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
-                      ? '#f5f5f5'
-                      : 'white'
-                  "
-                >
-                  <option [ngValue]="null">Select Band</option>
-                  <option *ngFor="let band of bands" [ngValue]="band.id">
-                    {{ band.name }}
-                  </option>
-                </select>
+                  <mat-form-field
+                    appearance="outline"
+                    style="width: 100%; margin-top: 8px"
+                    [ngClass]="{
+                      'custom-disabled': hasBandSelected(node.id, 'yes')
+                    }"
+                  >
+                    <mat-label>Select Band (Yes)</mat-label>
+                    <mat-select
+                      [ngModel]="getBandId(node.id, 'yes')"
+                      (ngModelChange)="onBandChange(node.id, 'yes', $event)"
+                      [disabled]="hasBandSelected(node.id, 'yes')"
+                    >
+                      <mat-option [value]="null">
+                        <span style="color: #9e9e9e">No band selected</span>
+                      </mat-option>
+                      <mat-option *ngFor="let band of bands" [value]="band.id">
+                        <span style="font-weight: 500">{{ band.name }}</span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
+
+                <!-- NO -->
+                <div style="flex: 1">
+                  <button
+                    mat-raised-button
+                    color="warn"
+                    (click)="createNoNode(node)"
+                    [disabled]="!!getBandId(node.id, 'no')"
+                    [style.opacity]="
+                      hasChild(node.id, 'no') || hasBandSelected(node.id, 'no')
+                        ? 0.6
+                        : 1
+                    "
+                    style="
+                      width: 100%;
+                      height: 40px;
+                      font-weight: 500;
+                      border: 2px solid #f44336;
+                      border-radius: 6px;
+                      background-color: #ffebee;
+                    "
+                  >
+                    No Path
+                  </button>
+
+                  <mat-form-field
+                    appearance="outline"
+                    style="width: 100%; margin-top: 8px"
+                    [ngClass]="{
+                      'custom-disabled': hasBandSelected(node.id, 'no')
+                    }"
+                  >
+                    <mat-label>Select Band (No)</mat-label>
+                    <mat-select
+                      [ngModel]="getBandId(node.id, 'no')"
+                      (ngModelChange)="onBandChange(node.id, 'no', $event)"
+                      [disabled]="hasBandSelected(node.id, 'no')"
+                    >
+                      <mat-option [value]="null">
+                        <span style="color: #9e9e9e">No band selected</span>
+                      </mat-option>
+                      <mat-option *ngFor="let band of bands" [value]="band.id">
+                        <span style="font-weight: 500">{{ band.name }}</span>
+                      </mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                </div>
               </div>
 
               <!-- Delete Button -->
-              <div style="display: flex; justify-content: center">
-                <button
-                  (click)="deleteNode(node)"
-                  [disabled]="node.data?.level === 0"
-                  style="
-                    font-size: 11px;
-                    padding: 4px 8px;
-                    background: linear-gradient(to bottom, #9e9e9e, #616161);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    cursor: pointer;
-                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-                    transition: all 0.2s;
-                    width: 100%;
-                  "
-                  [style.opacity]="node.data?.level === 0 ? '0.6' : '1'"
-                >
-                  Delete Node
-                </button>
-              </div>
-            </div>
+              <button
+                *ngIf="node.data?.level !== 0"
+                mat-raised-button
+                color="basic"
+                (click)="deleteNode(node)"
+                style="
+                  width: 100%;
+                  margin-top: 12px;
+                  background: #f5f5f5;
+                  color: #f1ecec;
+                  font-weight: 500;
+                  border: 1px solid #ccc;
+                  border-radius: 6px;
+                  box-shadow: none;
+                  text-transform: none;
+                  font-weight: 700;
+                  font-size: 14px;
+                  background-color: #f44336;
+                "
+              >
+                Delete Node
+              </button>
+            </mat-card>
           </div>
         </svg:foreignObject>
       </svg:g>
     </ng-template>
 
-    <!-- ... (keep rest of the template the same) ... -->
+    <!-- Edges -->
+    <ng-template #linkTemplate let-link>
+      <svg:g class="edge">
+        <svg:path
+          class="line"
+          [attr.stroke]="link.data?.type === 'yes' ? '#4caf50' : '#f44336'"
+          stroke-width="3"
+          marker-end="url(#arrow)"
+          [attr.d]="link.renderedPath"
+        ></svg:path>
+        <svg:text
+          class="edge-label"
+          text-anchor="middle"
+          font-size="12"
+          font-weight="500"
+          [attr.fill]="link.data?.type === 'yes' ? '#2e7d32' : '#c62828'"
+        >
+          <textPath
+            [attr.href]="'#' + link.id"
+            startOffset="50%"
+            dominant-baseline="central"
+          >
+            {{ link.label }}
+          </textPath>
+        </svg:text>
+      </svg:g>
+    </ng-template>
+
+    <!-- Arrow Marker -->
+    <ng-template #defsTemplate>
+      <svg:defs>
+        <svg:marker
+          id="arrow"
+          viewBox="0 -5 10 10"
+          refX="8"
+          refY="0"
+          markerWidth="8"
+          markerHeight="8"
+          orient="auto"
+        >
+          <svg:path d="M0,-5L10,0L0,5" fill="#616161"></svg:path>
+        </svg:marker>
+      </svg:defs>
+    </ng-template>
   </ngx-graph>
 
+  <!-- Export Button -->
   <button
+    mat-raised-button
+    color="primary"
     (click)="logTreeStructure()"
     style="
       position: fixed;
       bottom: 20px;
       right: 20px;
-      padding: 10px 20px;
-      background: linear-gradient(to bottom, #2196f3, #1976d2);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
       z-index: 100;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-      transition: all 0.2s;
+      padding: 12px 24px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(33, 150, 243, 0.3);
     "
   >
-    Log Tree Structure
+    Export Tree Structure
   </button>
 </div>
